@@ -1,12 +1,17 @@
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+ 
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+
+import org.json.simple.parser.ParseException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -49,7 +54,7 @@ public class Indexer {
         //         new IndexWriterConfig(new KeywordAnalyzer()));
         
         IndexWriter indexWriter = new IndexWriter(
-            FSDirectory.open(indexDir),
+            FSDirectory.open(indexDir.toPath()),
             new IndexWriterConfig(new StandardAnalyzer()));
         
         int count = indexFile(indexWriter, dataFile);
@@ -60,31 +65,40 @@ public class Indexer {
     }
 
     private int indexFile(IndexWriter indexWriter, File dataFile) throws IOException {
-        FieldType fieldType = new FieldType();
-        fieldType.setStored(true);
-        fieldType.setIndexed(true);
+       // FieldType fieldType = new FieldType();
+       //fieldType.setStored(true);
+       // fieldType.setIndexed(true);
 
         int count = 0;
         JSONParser parser = new JSONParser();
-        JSONArray a = (JSONArray) parser.parse(new FileReader(dataFile));
+        try
+	{
+		JSONArray a = (JSONArray) parser.parse(new FileReader(dataFile));
 
-        for (Object o : a)
-        {
-            JSONObject tweetInfo = (JSONObject) o; {
+	        for (Object o : a)
+        	{
+            		JSONObject tweetInfo = (JSONObject) o; 
     
 
-            Document document = new Document();
+            		Document document = new Document();
 
             // document.add(new Field(ID, tweetInfo.get(ID), fieldType));
-            document.add(new Field(TIMESTAMP, tweetInfo.get(TIMESTAMP), fieldType));
-            document.add(new StringField(USER, tweetInfo.get(USER), Field.Store.YES));
-            document.add(new TextField(TWEET, tweetInfo.get(TWEET), Field.Store.YES));
-            document.add(new StringField(GEO, tweetInfo.get(GEO), Field.Store.YES));
-            document.add(new StringField(HASHTAGS, tweetInfo.get(HASHTAGS), Field.Store.YES));
+        //    document.add(new Field(TIMESTAMP, tweetInfo.get(TIMESTAMP).toString(), fieldType));
+            		document.add(new StringField(USER, tweetInfo.get(USER).toString(), Field.Store.YES));
+            		System.out.println( tweetInfo.get(USER).toString());
+			document.add(new TextField(TWEET, tweetInfo.get(TWEET).toString(), Field.Store.YES));
+            		document.add(new StringField(GEO, tweetInfo.get(GEO).toString(), Field.Store.YES));
+            		document.add(new StringField(HASHTAGS, tweetInfo.get(HASHTAGS).toString(), Field.Store.YES));
 
-            indexWriter.addDocument(document);
-            count++;
-        }
+            		indexWriter.addDocument(document);
+            		count++;
+        	}
+	}
+	catch(ParseException e)
+	{
+		e.printStackTrace();
+	}
+
         return count;
     }
 }
