@@ -16,7 +16,7 @@ def search_tweets(c):
         search_tweets(c)
 
 for idx,j in enumerate(i.values()):
-    if idx < 70:
+    if idx < 632:
         continue
     geo = str(j[0])+","+str(j[1])+", 100km"
     print(idx, geo)
