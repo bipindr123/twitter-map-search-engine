@@ -27,8 +27,10 @@ for idx,j in enumerate(i.values()):
     c.Store_json =True
     c.Lang = 'en'
     c.Output = "data_tweets2.json"
-    c.Custom["tweet"] = ["id", "created_at", "user_id", "username", "name", "place", "link", "urls", "hashtags", "geo"]
+    c.Custom["tweet"] = ["id", "created_at", "user_id", "username", "name", "text" , "place", "link", "urls", "hashtags", "geo"]
     try:
         search_tweets(c)
+    except KeyboardInterrupt:
+        exit(0)
     except:
         continue
