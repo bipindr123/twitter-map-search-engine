@@ -1,3 +1,8 @@
+import java.io.*;
+import java.util.*;
+import org.json.simple.*;
+import org.json.simple.parser.*;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
@@ -11,73 +16,77 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import java.nio.file.*;
+import java.util.Scanner;
 
-import java.io.File;
 
 
 public class Searcher {
+   public static void main(String[] args) {
+      String searchTerm = "def";
+	try {
+            searchTerm = args[0];
 
-    public static void main(String[] args) throws Exception {
-        try {
-            String indexDir = args[0];
-            int numHits = Integer.parseInt(args[1]);
-
-            Searcher tweetSearcher = new Searcher();
-            tweetSearcher.termSearch(new File(indexDir), numHits);
-            // tweetSearcher.wildcardQuery(new File(indexDir), numHits);
-            
-        }
+           }
         catch (Exception e) {
-            System.out.println("Usage: java TweetSearcher <index directory>");
+            System.out.println("Usage: java Searcher <search term>");
         }
-    }
-
-    
-    private void termSearch(File indexDir, int numHits) throws Exception {
-        System.out.println("Find tweets by user @scotthamilton:");
-
-        Directory directory = FSDirectory.open(indexDir);
-        DirectoryReader directoryReader = DirectoryReader.open(directory);
-        IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
-
-        Term term = new Term(TWEET, "BDSM");
-
-        Query query = new TermQuery(term);
-
-        TopDocs topDocs = indexSearcher.search(query, numHits);
-
-        printResults(topDocs.scoreDocs, indexSearcher);
-    }
-
-    private void wildcardQuery(File indexDir, int numHits) throws Exception {
-        System.out.println("Find tweets that mention another user:");
-
-        Directory directory = FSDirectory.open(indexDir);
-        DirectoryReader directoryReader = DirectoryReader.open(directory);
-        IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
-
-        Term term = new Term(TEXT, "*@*");
-        Query query = new WildcardQuery(term);
-
-        TopDocs topDocs = indexSearcher.search(query, numHits);
-
-        printResults(topDocs.scoreDocs, indexSearcher);
-    }
-
     
 
-    
-    private void printResults(ScoreDoc[] results, IndexSearcher indexSearcher) throws Exception {
-        for (int i = 0; i < results.length; i++) {
-            int docId = results[i].doc;
-            Document foundDocument = indexSearcher.doc(docId);
-            System.out.println(foundDocument.get(USER) + " : " + foundDocument.get(TWEET) + "," + 
-            "Timestamp" +":"+ foundDocument.get(TIMESTAMP) + "," + 
-            "location" +":"+ foundDocument.get(GEO) + "," +
-            "Tags" +":"+ foundDocument.get(HASHTAGS) );
-        }
-        System.out.println("Found " + results.length + " results");
+	JSONParser parser = new JSONParser();
+      try {
+         JSONArray a = (JSONArray) parser.parse(new FileReader("data_tweets.json"));
+         for (Object o:a)
+         {
+            JSONObject tweetinfo = (JSONObject) o;
+            String name = (String)tweetinfo.get("username");
+            //System.out.println("Name: " + name);
+         }
+      } catch(Exception e) {
+         e.printStackTrace();
+      }
+	
+	Analyzer analyzer = new StandardAnalyzer();
+	try {
+
+	Directory directory = FSDirectory.open(Paths.get("/opt/home/cs242-w22/ir-project/Bhai"));
+        DirectoryReader indexReader = DirectoryReader.open(directory);
+        IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+        QueryParser qparser = new QueryParser("tweet", analyzer);
+        Query query = qparser.parse(searchTerm);
         
-    }
+        //System.out.println(query.toString());
+        int topHitCount = 100;
+        ScoreDoc[] hits = indexSearcher.search(query, topHitCount).scoreDocs;
+        //System.out.println(hits.length);
+        System.out.println("[");
+	for (int rank = 0; rank < hits.length-1; ++rank) {
+                Document hitDoc = indexSearcher.doc(hits[rank].doc);
+           // System.out.println((rank + 1) + " (score:" + hits[rank].score + ")--> " + hitDoc.get("username") + " : " + hitDoc.get("tweet") + "," + 
+           // "Timestamp" +":"+ hitDoc.get("created_at") + "," + 
+           // "location" +":"+ hitDoc.get("geo") + "," +
+           // "Tags" +":"+ hitDoc.get("hashtags"));		
+	System.out.println("{ \"score\":\""+hits[rank].score +"\",\"username\":\""+hitDoc.get("username")+"\",\"link\":\""+hitDoc.get("link")+"\", \"tweet\":\""+hitDoc.get("tweet")+"\",\"timestamp\":\""+hitDoc.get("created_at")+"\",\"location\":\""+hitDoc.get("geo")+"\"}," );
+	}       
+	int rank = hits.length -1;
+	Document hitDoc = indexSearcher.doc(hits[rank].doc);
 
+	System.out.println("{ \"score\":\""+hits[rank].score +"\",\"username\":\""+hitDoc.get("username")+"\",\"link\":\""+hitDoc.get("link")+"\" ,\"tweet\":\""+hitDoc.get("tweet")+"\",\"timestamp\":\""+hitDoc.get("created_at")+"\",\"location\":\""+hitDoc.get("geo")+"\"}" );
+	System.out.println("]");
+	
+	indexReader.close();
+        directory.close();    }
+	
+	catch(IOException e){
+		e.printStackTrace();
+		}
+
+	catch(Exception e){
+		e.printStackTrace();
+	}	
+   }
 }
+

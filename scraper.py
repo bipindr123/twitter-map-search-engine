@@ -1,5 +1,4 @@
 from time import sleep
-from typing import final
 import twint
 import json
 import aiohttp
@@ -26,14 +25,16 @@ def search_tweets(c):
         print(e)
 
 for idx,j in enumerate(i.values()):
+    if idx < 182:
+        continue
     tweet = {}
-    geo = str(j[0])+","+str(j[1])+", 500km"
+    geo = str(j[0])+","+str(j[1])+", 50km"
     print(idx, geo)
     # c.Custom["user"] = ["id", "username"]
     c.Custom["tweet"] = ["id", "created_at", "user_id", "username", "name", "tweet" , "place", "link", "urls", "hashtags", "geo", "language"]
     c.Geo = geo
     c.Since = '2010-01-01'
-    c.Limit = 100
+    c.Limit = 4500
     c.Hide_output = True
     c.Lang = 'en'
     # c.Count = True
